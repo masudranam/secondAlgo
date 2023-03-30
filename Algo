@@ -1,0 +1,1203 @@
+#include<bits/stdc++.h>
+using namespace std;
+#define int long long
+const int M=1e9+7;
+const int N=1e5;
+
+#include<ext/pb_ds/assoc_container.hpp>
+#include<ext/pb_ds/tree_policy.hpp>
+using namespace __gnu_pbds;
+template<class T>using oset=tree<T,null_type,less<T>,
+rb_tree_tag,tree_order_statistics_node_update>;
+//*set.find_by_order(a) -> value at index a
+//order_of_key(a) -> index or number
+
+
+
+
+//All the variable declaration
+int vis[N],col[N];
+vector<int> adj[N],radj[N];
+int in[N],out[N],size[N],d[N],pr[N],low[N];
+int indeg[N],c[N],t=1;
+int level[N],table[N][20],p[N];
+
+
+// dfs for lca 
+void dfs(int u,int p=-1){
+anc[u][0]=p;
+for(int i=1;i<19;i++)
+    anc[u][i]=~anc[u][i-1]?anc[anc[u][i-1]][i-1]:-1;
+for(int v:adj[u]){
+    if(v==p)continue;
+    d[v]=d[u]+1;
+    dfs(v,u);
+}
+}
+
+int lca(int u,int v){
+if(d[u]<d[v])
+    swap(u,v);
+for(int i=18;~i;i--)
+    if(d[u]-(1<<i)>=d[v])
+    u=anc[u][i];
+if(u==v)
+    return u;
+for(int i=18;~i;i--)
+    if(anc[u][i]^anc[v][i])
+    u=anc[u][i],v=anc[v][i];
+return anc[u][0];
+} 
+
+
+int lca(int a,int b){
+ if(level[a]>level[b])swap(a,b);
+ int d=level[b]-level[a];
+ while(d--){
+    b=p[b];
+ }
+ if(a==b)return a;
+ while(p[a]!=p[b])
+        a=p[a],b=p[b];
+ return p[a];
+}
+
+
+void lcadfs(int node,int par){
+table[node][0]=par;
+for(int child:adj[node])
+    if(child!=par)
+    lcadfs(child,node);
+}
+
+//sparse table initialization
+void init(){
+lcadfs(1,-1);
+for(int j=1;j<20;j++){
+    for(int i=1;i<=N;i++){
+        if(table[i][j-1]!=-1){
+            int par=table[i][j-1];
+            table[i][j]=table[par][j-1];
+        }
+    }
+}
+}
+
+
+int LCA(int a,int b){
+if(level[a]>level[b])swap(a,b);
+int d=level[b]-level[a];
+while(d){
+    int i=log2(d);
+    b=table[b][i];
+    d-=(1<<i);
+}
+if(a==b)return a;
+for(int i=20;i>=0;i--){
+    if(table[a][i]!=-1&& (table[a][i]!=table[b][i])){
+        a=table[a][i],b=table[b][i];
+    }
+}
+return p[a];
+}
+
+
+ bool bridge(int u,int p=-1){
+     vis[u]=1;
+     in[u]=low[u]=t++;
+     for(auto v:adj[u]){
+        if(v==p)continue;
+        if(vis[v]){
+            low[u]=min(low[u],in[v]);
+        } else{
+        if(bridge(v,u))return true;
+        if(low[v]>in[u])return true;
+        low[u]=min(low[v],low[u]);
+        }
+     }
+     return false;
+ }
+
+
+ void TopSort(int node,int n){
+ vector<int> res;
+ queue<int> q;
+ for(int i=0;i<n;i)if(indeg[i]==0)
+    q.push(i);
+ while(q.size()){
+    int curr=q.front();
+    res.push_back(curr);
+    q.pop();
+    for(int x:adj[curr]){
+        indeg[x]--;
+        if(indeg[x]==0){
+            q.push(x);
+        }
+    }
+ }
+ cout<<"Top sort: \n";
+ for(auto x: res)cout<<x<<" ";
+ }
+
+bool isCycDG(int u=0){
+ vis[u]=1;
+ for(int v:adj[u]){
+    if(!vis[v]){
+        if(isCycDG(v))return true;
+    }else if(vis[v]==1)return true;
+ }
+ vis[u]=2;
+ return false;
+ }
+
+ bool isCycUG(int u=0,int p=-1){
+ vis[u]=1;
+ for(auto v:adj[u]){
+    if(!vis[v]){
+        if(isCycUG(v,u))return true;
+    } else if(v!=p)return true;
+ }
+ return false;
+ }
+
+ bool isBipart(int u=0,int c=0){
+ vis[u]=1;
+ col[u]=c;
+ for(auto v:adj[u]){
+    if(!vis[v]){
+        if(!isBipart(v,c^1))return false;
+    }else if(col[v]==col[u])return false;
+ }
+ return true;
+ }
+
+ void sp(int src,int dest){
+    vis[src]=1;
+    pr[src]=-1;
+    queue<int> q;
+    q.push(src);
+    while(!q.empty()){
+        int curr=q.front();
+        q.pop();
+        for(int child: adj[curr]){
+            if(vis[child]==0){
+                q.push(child);
+                d[child]=d[curr]+1;
+                pr[child]=curr;
+                vis[child]=1;
+            }
+        }
+    }
+    if(vis[dest]==0){
+        cout<<"No path \n";
+    }else{
+    vector<int> pth;
+    for(int child=dest;child!=-1; child=pr[child]){
+        pth.push_back(child);
+    }
+    reverse(pth.begin(),pth.end());
+    cout<<"path dist "<<d[dest]<<":"<<endl;
+    for(int x: pth)
+        cout<<x<<" ";
+    cout<<endl;
+    }
+ }
+
+ void bfs(int src){
+ queue<int> q;
+ vis[src]=1;
+ q.push(src);
+ while(!q.empty()){
+    int curr=q.front();
+    q.pop();
+    cout<<curr<<" ";
+    for(int x: adj[curr]){
+        if(vis[curr]==0){
+            q.push(x);
+            vis[x]=1;
+        }
+    }
+ }
+
+
+ }
+
+int dfss(int node){
+  vis[node]=1;
+  int curr=1;
+  for(int child: adj[node]){
+    if(vis[child]==0){
+        curr+=dfss(child);
+    }
+  }
+  size[node]=curr;
+  return curr;
+}
+
+void dfsiot(int node){
+vis[node]=1;
+in[node]=t++;
+for(int child: adj[node]){
+    if(vis[child]==0){
+        dfsiot(child);
+    }
+}
+out[node]=t++;
+}
+
+ void dfs(int node){
+ vis[node]=1;
+ cout<<node<<" ";
+ for(int child: adj[node]){
+    if(vis[child]==0)
+        dfs(child);
+ }
+ }
+
+bool dfscd(int node,int par){
+vis[node]=1;
+for(int child: adj[node]){
+    if(vis[child]==0){
+        if(dfscd(child,node))
+            return true;
+        }else{
+        if(child!=par)
+            return true;
+        }
+}
+return false;
+}
+
+void ts(int n){
+queue<int> q;
+for(int i=0; i<n; i++)
+    if(indeg[i]==0)
+        q.push(i);
+    while(!q.empty()){
+        int curr=q.front();
+        cout<<curr<<" ";
+        q.pop();
+        for(int x: adj[curr]){
+            indeg[x]--;
+            if(indeg[x]==0)
+                q.push(x);
+        }
+    }
+}
+
+void dfs(int node,int curr=0){
+if(~c[node]){
+
+      if(c[node]^curr){
+        cout<<"IMPOSSIBLE\n";
+        //exit(0);
+        exit(0);
+    }
+    return;
+}
+c[node]=curr;
+for(int x: adj[node])
+    dfs(x,curr^1);
+
+}
+
+
+vector<array<int,2>>adj1[N];
+void diajkstraPQ(int src){
+memset(d,0x3f,sizeof(d));
+priority_queue<array<int,2>,vector<array<int,2>>,greater<array<int,2>>>q;
+d[src]=0;
+q.push({0,src});
+while(q.size()){
+    array<int,2> u=q.top();
+    q.pop();
+    if(u[0]>d[u[1]])continue;
+    for(array<int,2>v:adj1[u[1]]){
+        if(d[v[1]]>u[0]+v[0]){
+            d[v[1]]=u[0]+v[0];
+            q.push({d[v[1]],v[1]});
+        }
+    }
+}
+}
+
+void diajkstraSet(int src){
+memset(d,0x3f,sizeof(d));
+set<array<int,2>>s;
+s.insert({d[src]=0,src});
+while(s.size()){
+    int u=(*s.begin())[1];
+    s.erase(s.begin());
+    for(auto v: adj1[u]){
+        if(d[v[0]]>d[u]+v[0]){
+            s.erase({d[v[0]],v[0]});
+            d[v[0]]=d[u]+v[0];
+            s.insert({d[v[0]],v[0]});
+        }
+    }
+}
+}
+
+//kusarajus for strongly connected component
+stack<int> s;
+ void dfs1(int src){
+    vis[src]=1;
+    for(int u: adj[src]){
+        if(!vis[u])dfs1(u);
+    }
+    s.push(src);
+ }
+
+ void dfs2(int src){
+     cout<<src<<" ";
+     vis[src]=1;
+     for(auto u: radj[src]){
+        if(!vis[u])dfs2(u);
+     }
+ }
+
+ void kusarajus(int n){
+ for(int i=0;i<n;i++){
+    if(!vis[i])dfs1(i);
+ }
+ memset(vis,0,sizeof(vis));
+ while(s.size()){
+    int u=s.top();s.pop();
+    if(!vis[u]){
+      dfs2(u);
+     cout<<endl;
+    }
+ }
+ }
+
+void topo(int n){
+for(int i=0;i<n;i++){
+    if(!vis[i])dfs1(i);
+}
+while(s.size()){
+    cout<<s.top()<<" ";
+    s.pop();
+}
+cout<<endl;
+}
+
+void bfs_0_1(int s,vector<array<int,2>> adj[]){
+    memset(d,0x3f,sizeof(d));
+    d[s]=0;
+    deque<int> q;
+    q.push_front(s);
+    while(q.size()){
+        int u=q.front();q.pop_front();
+        for(array<int,2> v: adj[u]){
+            if(d[u]+v[1]<d[v[0]]){
+                d[v[0]]=d[u]+v[1];
+                if(v[1]==1)
+                    q.push_back(v[0]);
+                else q.push_front(v[0]);
+            }
+        }
+    }
+
+
+memset(d,0x3f,sizeof(d));
+d[s] = 0;
+deque<int> q;
+q.push_front(s);
+while (!q.empty()) {
+    int v = q.front();
+    q.pop_front();
+    for (auto edge : adj[v]) {
+        int u = edge[0];
+        int w = edge[1];
+        if (d[v] + w < d[u]) {
+            d[u] = d[v] + w;
+            if (w == 1)
+                q.push_back(u);
+            else
+                q.push_front(u);
+        }
+    }
+}
+}
+
+//cycle detection for dirrected graph
+vector<int> color,parent;
+int cycle_start,cycle_end;
+bool dfsc(int v) {
+    color[v] = 1;
+    for (int u : adj[v]) {
+        if (color[u] == 0) {
+            parent[u] = v;
+            if (dfsc(u))
+                return true;
+        } else if (color[u] == 1) {
+            cycle_end = v;
+            cycle_start = u;
+            return true;
+        }
+    }
+    color[v] = 2;
+    return false;
+}
+
+void find_cycle(int n) {
+    color.assign(n, 0);
+    parent.assign(n, -1);
+    cycle_start = -1;
+
+    for (int v = 0; v < n; v++) {
+        if (color[v] == 0 && dfsc(v))
+            break;
+    }
+
+    if (cycle_start == -1) {
+        cout << "Acyclic" << endl;
+    } else {
+        vector<int> cycle;
+        cycle.push_back(cycle_start);
+        for (int v = cycle_end; v != cycle_start; v = parent[v])
+            cycle.push_back(v);
+        cycle.push_back(cycle_start);
+        reverse(cycle.begin(), cycle.end());
+
+        cout << "Cycle found: ";
+        for (int v : cycle)
+            cout << v << " ";
+        cout << endl;
+    }
+}
+
+int find(int v){
+return v==p[v]?v:p[v]=find(p[v]);
+}
+
+void Union(int a,int b){
+a=find(a);
+b=find(b);
+if(a!=b){
+    if(size[a]<size[b])swap(a,b);
+    p[b]=a;
+    size[a]+=size[b];
+}
+}
+
+
+vector<int>seive1(){
+ vector<int> pfs;
+ int lpf[N+1]={0};
+
+     for(int i=2; i<=N; i++){
+       // debug(i);
+        if(!lpf[i]){
+              pfs.push_back(i);
+            lpf[i]=i;
+        }
+
+  for(int j=0;j<pfs.size() && pfs[j]<=lpf[i]&& i*pfs[j]<=N; j++){
+           // debug(j);
+            lpf[i*pfs[j]]=pfs[j];
+        }
+    }
+    return pfs;
+}
+
+vector<int> sieve() {
+vector<int> prime;
+bool mark[N]={0};
+    for (int i=3; i*i<=N; i+=2) {
+        if (mark[i]==false) {
+            for (int j=i+i; j<N; j+=i) {
+                mark[j]=true;
+            }
+        }
+    }
+    prime.push_back (2);
+    for (int i=3; i<N; i+=2)
+        if (mark[i]==false)
+            prime.push_back (i);
+    return prime;
+}
+
+vector<int> segSieve(ll l,ll r){
+bool isPrime[r-l+1];
+vector<int>prime=sieve(),p;
+for(auto &a:isPrime)a=true;
+
+for(int i=0; prime[i]*prime[i]<=r; i++){
+    int cp=prime[i];
+    ll base=(l/cp)*cp;
+    if(base<cp)base+=cp;
+    for(ll j=base; j<=r; j+=cp){
+      isPrime[j-l]=false;
+    }
+    if(base==cp)isPrime[base-l]=true;
+}
+for(int i=0; i<r-l+1; i++){
+    if(isPrime[i]==true)p.push_back(i+l);
+}
+return p;
+}
+
+
+bool Prime(int n){
+if(n<=1)return false;
+if(n<=3)return true;
+if(n%2==0 || n%3==0)return false;
+for(int i=5; i*i<=n; i+=6){
+    if(n%i==0 || n%(i+2)==0)
+        return false;
+}
+return true;
+}
+
+int  divisor(int n){
+    int ans=1;
+   for(int i=2; i*i<=n; i++){
+        int cnt=0;
+    while(n%i==0)
+        n/=i,cnt++;
+   ans=ans*(cnt+1);
+   }
+   if(n>1)ans*=2;
+ return ans;
+}
+
+int divisor_sum(int n){
+int res=1;
+for(int i=2;i*i<=n;i++){
+    int curr_sum=1,curr_term=1;
+    while(n%i==0){
+        n/=i;
+        curr_term*=i;
+        curr_sum+=curr_term;
+    }
+    res*=curr_sum;
+}
+if(n>1)res*=(1+n);
+return res;
+
+}
+
+ll binpow(ll a,ll n,ll mod){
+ll res=1;
+while(n){
+   if(n&1)res=res*a%mod;
+   res=res*res%mod;
+    n>>=1;
+}return res%mod;
+}
+
+ll gcd(ll a,ll b){
+return b?gcd(b,a%b):a;
+}
+
+ll gcdext(ll a,ll b,ll& x,ll& y){
+    if(!b){
+    x=1,y=0;
+    return a;
+    }
+ll x1,y1;
+ll d=gcdext(b,a%b,x1,y1);
+x=y1;
+y=x1-y1*(a/b);
+return d;
+
+}
+
+ll modinv(ll a,ll m){
+    ll x,y;
+ll g=gcdext(a,m,x,y);
+if(g!=1)return -1;
+
+return (x%m+m)%m;
+
+}
+
+int nCr(int n,int r){
+int ans=1;
+if(r>n/2)r=n-r;
+for(int i=1;i<=r;i++){
+    ans*=n;
+    ans/=i;
+    n--;
+}
+return ans;
+}
+
+ll lcm(ll a,ll b){
+return a/gcd(a,b)*b;
+}
+
+ll ldfe(ll a,ll b,ll c,ll &x,ll y,ll &g){
+g=gcd(abs(a),abs(b));
+if(c%g)return false;
+x*=c/g;
+y*=c/g;
+if(a<0)x=-x;
+if(b<0)y=-y;
+return false;
+}
+
+pair<int,int> fib(int n){
+if(!n){
+    return {0,1};
+}
+auto p=fib(n>>1);
+int c=p.first*(2*p.second-p.first);
+int d=p.first*p.first+p.second*p.second;
+if(n&1)
+return {d,c+d};
+else return {c,d};
+    }
+
+int phi(int n){
+//relatively coprime 1 to n  sqrt(n)
+int res=n;
+for(int i=2; i*i<=n; i++){
+    if(n%i==0){
+        while(n%i==0)
+            n/=i;
+        res-=res/i;
+    }
+}
+if(n>1)res-=res/n;
+return res;
+}
+
+void phi_1_to_n(int n){
+    // n*loglog(n) based on sieve
+  vector<int> phi(n+1);
+  for(int i=0; i<=n; i++)
+    phi[i]=i;
+  for(int i=2; i<=n; i++){
+    if(phi[i]==i){
+        for(int j=i;j<=n;j+=i)
+            phi[j]-=phi[j]/i;
+    }
+  }
+}
+
+void phi_1_to_n1(int n){
+    // n*log(n)
+    vector<int> phi(n+1);
+    phi[0]=0;phi[1]=1;
+
+    for(int i=2; i<=n; i++)
+        phi[i]=i-1;
+    for(int i=2; i<=n; i++){
+        for(int j=i*2;j<=n; j+=i)
+            phi[j]-=phi[i];
+    }
+}
+
+void gcd_sum_up_to_n(int n){
+vector<int> phi(n+1),res(n+1,0);
+for(int i=0; i<=n; i++)
+    phi[i]=i;
+
+for(int i=2;i<=n; i++){
+   if(phi[i]==i){
+    for(int j=i;j<=n;j+=i)
+        phi[j]-=phi[j]/i;
+   }
+}
+
+   for(int i=1;i<=n; i++){
+    for(int j=2;i*j<=n;j++){
+        res[i*j]+=i*phi[j];
+    }
+   }
+
+   for(int i=2;i<=n;i++)
+    res[i]+=res[i-1];
+    cout<<res[n]<<endl;
+}
+
+int lcm_1_to_n(int a,int b){
+  //a==n,b==n-1
+  if(b==1)return a;
+  a=(a*b)/__gcd(a,b);
+  b-=1;
+       return lcm_1_to_n(a,b);
+}
+
+int mxPrimeSum(int n){
+int prime[n+1]={0};
+for(int i=2;i<=n/2;i++){
+    if(prime[i]==0){
+            prime[i]=i;
+        for(int p=i*2;p<=n;p+=i)
+            prime[p]=i;
+    }
+
+}
+int sum=0;
+for(int i=1;i<=n;i++)
+    sum+=prime[i];
+
+  return sum;
+}
+
+int divSum_1_to_n(int n){
+int sum=0;
+for(int i=1;i<=n;i++){
+    sum+=i*(n/i);
+}
+return sum;
+}
+
+//BIT
+template <class T>
+struct BIT { //1-indexed
+  int n; vector<T> t;
+  BIT() {}
+  BIT(int _n) {
+    n = _n; t.assign(n + 1, 0);
+  }
+  T query(int i) {
+    T ans = 0;
+    for (; i >= 1; i -= (i & -i)) ans += t[i];
+    return ans;
+  }
+  void upd(int i, T val) {
+    if (i <= 0) return;
+    for (; i <= n; i += (i & -i)) t[i] += val;
+  }
+  void upd(int l, int r, T val) {
+    upd(l, val);
+    upd(r + 1, -val);
+  }
+  T query(int l, int r) {
+    return query(r) - query(l - 1);
+  }
+};
+
+//segment  tree
+ int arr[N];
+ int tree[N*3];
+ void init(int node,int b,int e){
+ if(b==e){
+    tree[node]=arr[b];
+    return;
+ }
+ int left=node*2;
+ int right=node*2+1;
+ int mid=(b+e)/2;
+ init(left,b,mid);
+ init(right,mid+1,e);
+ tree[node]=tree[left]+tree[right];
+ }
+
+ int query(int node,int b,int e,int i,int j){
+ if(i>e || b>j)
+    return 0;
+ if(b>=i && e<=j)
+    return tree[node];
+ int left=node*2;
+ int right=node*2+1;
+ int mid=(b+e)/2;
+ int p1=query(left,b,mid,i,j);
+ int p2=query(right,mid+1,e,i,j);
+ return p1+p2;
+ }
+
+void update(int node,int b,int e,int i,int j,int newValue){
+ if(i>e || b>j)
+    return;
+ if(b>=i && e<=j)
+     tree[node]=newValue;
+ int left=node*2;
+ int right=node*2+1;
+ int mid=(b+e)/2;
+ update(left,b,mid,i,j,newValue);
+ update(right,mid+1,e,i,j,newValue);
+ tree[node]=tree[left]+tree[right];
+ }
+
+
+
+struct node{
+int mn,s,mx;
+}st[1<<19];
+int n,q;
+
+void upd(int l1,int x,int i=1,int l2=0,int r2=n-1){
+  if(l2==r2){
+    st[i].mn=x;
+    st[i].s=x;
+    st[i].mx=x;
+    return;
+  }
+  int m2=(l2+r2)/2;
+  if(l1<=m2)
+    upd(l1,x,2*i,l2,m2);
+  else upd(l1,x,2*i+1,m2+1,r2);
+
+  st[i].mn=min(st[2*i].mn,st[2*i+1].mn);
+  st[i].mx=max(st[2*i].mx,st[2*i+1].mx);
+  st[i].s=st[2*i].s+st[2*i+1].s;
+}
+
+int qry(int l1,int r1,int i=1,int l2=0,int r2=n-1){
+if(l2>=l1&&r2<=r1){
+    //return st[i].mn;
+    //return st[i].mx;
+    return st[i].s;
+}
+if(l2 > r1 || r2 < l1)return 0; //This line is crazy
+    int m2=(l2+r2)/2;
+//return min((l1<=m2?qry(l1,r1,2*i,l2,m2):1e9),(m2<r1?qry(l1,r1,2*i+1,m2+1,r2):1e9));
+//return max((l1<=m2?qry(l1,r1,2*i,l2,m2):-1e9),(m2<r1?qry(l1,r1,2*i+1,m2+1,r2):-1e9));
+return ((l1<=m2?qry(l1,r1,2*i,l2,m2):0)+(m2<r1?qry(l1,r1,2*i+1,m2+1,r2):0));
+}
+
+
+ 
+ struct node{
+int mn,s,lz;
+}st[1<<19];
+ int n,q,x[N];
+
+void app(int i,int x,int l2,int r2){
+st[i].mn+=x;
+st[i].s+=x*(r2-l2+1);
+st[i].lz+=x;
+}
+
+void psh(int i,int l2,int m2,int r2){
+app(2*i,st[i].lz,l2,m2);
+app(2*i+1,st[i].lz,m2+1,r2);
+st[i].lz=0;
+}
+
+void upd(int l1,int x,int i=1,int l2=0,int r2=n-1){
+if(l2==r2){
+    st[i].mn=x;
+    st[i].s=x;
+    return;
+}
+int m2=(l2+r2)/2;
+psh(i,l2,m2,r2);
+if(l1<=m2)
+    upd(l1,x,2*i,l2,m2);
+else upd(l1,x,2*i+1,m2+1,r2);
+st[i].mn=min(st[2*i].mn,st[2*i+1].mn);
+st[i].s=st[2*i].s+st[2*i+1].s;
+}
+
+void upd2(int l1,int r1,int x,int i=1,int l2=0,int r2=n-1){
+if(l1<=l2&&r2<=r1){
+    app(i,x,l2,r2);
+    return;
+}
+int m2=(l2+r2)/2;
+psh(i,l2,m2,r2);
+if(l1<=m2)upd2(l1,r1,x,2*i,l2,m2);
+if(m2<r1)upd2(l1,r1,x,2*i+1,m2+1,r2);
+st[i].mn=min(st[2*i].mn,st[2*i+1].mn);
+st[i].s=st[2*i].s+st[2*i+1].s;
+}
+
+int qry(int l1,int r1,int i=1,int l2=0,int r2=n-1){
+if(l1<=l2&&r2<=r1)return st[i].s;
+int m2=(l2+r2)/2;
+psh(i,l2,m2,r2);
+return (l1<=m2?qry(l1,r1,2*i,l2,m2):0)+(m2<r1?qry(l1,r1,2*i+1,m2+1,r2):0);
+}
+
+//pointer based segment tree
+struct node {
+   int lazy;
+   int val;
+   node* l, *r;
+   node() {val = lazy = 0; l = r = NULL;}
+};
+
+void lazy (node*& root, int l, int r) {
+   if (root->lazy != 0) {
+      root->val = root->lazy * (r - l + 1);
+      if (l < r) {
+         if (root->l == NULL) root->l = new node();
+         if (root->r == NULL) root->r = new node();
+         root->l->lazy += root->lazy;
+         root->r->lazy += root->lazy;
+      }
+      root->lazy = 0;
+   }
+}
+
+void upd (node*& root, int l, int r, int b, int e, int x) {
+   if (root == NULL) root = new node();
+   else lazy (root, l, r);
+   if (l > e || r < b) return ;
+   if (l >= b && r <= e) {
+      root->val += x * (r - l + 1);
+      if (l < r) {
+         if (root->l == NULL) root->l = new node();
+         if (root->r == NULL) root->r = new node();
+         root->l->lazy += x;
+         root->r->lazy += x;
+      }
+      return;
+   }
+   int m = (l + r) >> 1;
+   upd (root->l, l, m, b, e, x);
+   upd (root->r, m + 1, r, b, e, x);
+   root->val = root->l->val + root->r->val;
+}
+
+int get (node* root, int l, int r, int b, int e) {
+   if (root == NULL) return 0;
+   lazy (root, l, r);
+   if (l > e || r < b) return 0;
+   if (l >= b && r <= e) return root->val;
+   int m = (l + r) >> 1;
+   return get (root->l, l, m, b, e) + get (root->r, m + 1, r, b, e);
+}
+
+void rmv(node *&root){
+	if(root==NULL)return;
+	rmv(root->l);
+	rmv(root->r);
+	delete root;
+}
+
+void solve() {
+   int n, q; cin >> n >> q;
+   node* root = NULL;
+   while (q--) {
+      int i; cin >> i;
+      if (i == 0) {
+         int l, r, x;
+         cin >> l >> r >> x;
+         upd (root, 1, n, l, r, x);
+      } else {
+         int l, r; cin >> l >> r;
+         cout << get (root, 1, n, l, r) << endl;
+      }
+   }
+   rmv(root);
+}
+
+
+
+
+void mul(int F[2][2],int M[2][2]){
+ int x = F[0][0] * M[0][0] + F[0][1] * M[1][0];
+    int y = F[0][0] * M[0][1] + F[0][1] * M[1][1];
+    int z = F[1][0] * M[0][0] + F[1][1] * M[1][0];
+    int w = F[1][0] * M[0][1] + F[1][1] * M[1][1];
+
+    F[0][0] = x;
+    F[0][1] = y;
+    F[1][0] = z;
+    F[1][1] = w;
+}
+
+void pw(int f[2][2],int n){
+if(n<=1)return;
+int m[2][2]={{1,1},{1,0}};
+pw(f,n/2);
+mul(f,f);
+if(n%2)mul(f,m);
+}
+
+int fib(int n){
+int f[2][2]={{1,1},{1,0}};
+if(n==0)return 0;
+pw(f,n-1);
+return f[0][0];
+}
+
+
+int f[N];
+void fact(){
+f[0]=1;
+for(int i=1;i<N;i++)
+    f[i]=i*f[i-1]%M;
+}
+ll ncr(int n,int r){
+return (f[n]*1ll*pw(f[n-r],M-2,M)%M*1ll*pw(f[r],M-2,M)%M)%M;
+}
+//Aho corasic
+const int M=1e9+7;
+const int N=500*500+10;
+
+bitset<505>out[N];
+int f[N],g[N][26];
+
+//prefix function
+vector<int> prefix_function(string s) {
+    int n = (int)s.length();
+    vector<int> pi(n);
+    for (int i = 1; i < n; i++) {
+        int j = pi[i-1];
+        while (j > 0 && s[i] != s[j])
+            j = pi[j-1];
+        if (s[i] == s[j])
+            j++;
+        pi[i] = j;
+    }
+    return pi;
+}
+
+int buildMatching(const vector<string>& word){
+    memset(out, 0, sizeof(out));
+    memset(f, -1, sizeof(f));
+    memset(g, -1, sizeof g);
+int state=0;
+for(int i=0;i<sz(word);i++){
+    const string key=word[i];
+    int cur=0;
+    for(auto c:key){
+        if(g[cur][c-'a']==-1)g[cur][c-'a']=++state;
+        cur=g[cur][c-'a'];
+    }
+    out[cur][i]=1;
+}
+
+queue<int>q;
+for(int c=0;c<26;c++){
+    if(g[0][c]==-1){
+        g[0][c]=0;
+    }
+}
+
+for(int i=0;i<26;i++){
+    if(g[0][i]>0){
+        f[g[0][i]]=0;
+        q.push(g[0][i]);
+    }
+}
+
+while(sz(q)){
+state=q.front();q.pop();
+for(int c=0;c<26;c++){
+    if(g[state][c]!=-1){
+        int failure=f[state];
+        while(g[failure][c]==-1){
+            failure=f[failure];
+        }
+        failure=g[failure][c];
+        f[g[state][c]]=failure;
+        out[g[state][c]] |=out[failure];
+        q.push(g[state][c]);
+    }
+}
+}
+return state;
+}
+
+int findNextState(int cur,char nxtChar){
+    int state=cur;
+    int c=nxtChar-'a';
+    while(g[state][c]==-1)state=f[state];
+    return g[state][c];
+}
+
+int ans[505];
+
+void solve(){
+    int tt;cin>>tt;
+    for(int tc=1;tc<=tt;tc++){
+int n;string t;cin>>n>>t;
+vector<string>s(n);
+for(auto &x:s)cin>>x;
+for(int i=0;i<=n;i++)ans[i]=0;
+buildMatching(s);
+
+int cur=0;
+
+for(int i=0;i<sz(t);i++){
+cur=findNextState(cur,t[i]);
+if(out[cur]==0)continue;
+for(int j=0;j<sz(s);j++){
+    if(out[cur][j])ans[j]++;
+}
+
+}
+cout<<"Case "<<tc<<":\n";
+for(int i=0;i<n;i++)cout<<ans[i]<<endl;
+
+}
+}
+
+//Z algorithm
+
+vector<int> z_function(string s) {
+    int n = (int) s.length();
+    vector<int> z(n);
+    int l = 0, r = 0;
+    for (int i = 1; i < n; ++i) {
+        if (i <= r)
+            z[i] = min (r - i + 1, z[i - l]);
+        while (i + z[i] < n && s[z[i]] == s[i + z[i]])
+            ++z[i];
+        if (i + z[i] - 1 > r)
+            l = i, r = i + z[i] - 1;
+    }
+    return z;
+}
+
+//Trie algorithm
+int trie[N][26],node,isEnd[N];
+
+void ins(string s){
+    int cur=0;
+    for(auto c:s){
+        if(!trie[cur][c-'a'])trie[cur][c-'a']=++node;
+        cur=trie[cur][c-'a'];
+    }
+    isEnd[cur]++;
+}
+
+bool Remove(string s){
+int cur=0;
+for(auto c:s){
+    if(!trie[cur][c-'a'])return false;
+    cur=trie[cur][c-'a'];
+}
+
+if(!isEnd[cur])return false;
+isEnd[cur]--;
+return true;
+}
+
+bool Search(string s){
+int cur=0;
+for(auto c:s){
+    if(!trie[cur][c-'a'])return false;
+    cur=trie[cur][c-'a'];
+}
+return isEnd[cur];
+}
+
+
+//Manacher's Algorithm
+vector<int> pal_array(string s)
+{
+    string t=s;
+    s="#";
+    for(auto c:t)s+=c,s+="#";
+    s="@"+s+"$";
+    int n = s.size();
+    vector<int> len(n + 1);
+    int l = 1, r = 1;
+    for(int i = 1; i <= n; i++)
+    {
+        len[i] = min(r - i, len[l + (r - i)]);
+        while(s[i - len[i]] == s[i + len[i]])
+            len[i]++;
+        if(i + len[i] > r)
+        {
+            l = i - len[i];
+            r = i + len[i];
+        }
+    }
+   
+return len;
+}
+
+
+
+
