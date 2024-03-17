@@ -2,7 +2,16 @@
 using namespace std;
 
 void solve(){
-    cout << "Hello World\n";
+   int n; cin >> n;
+   vector<int> a(n);
+   for(auto &x : a){
+      cin >> x;
+   }    
+   sort(a.begin(),a.end());
+
+   for(auto x : a){
+      cout << x <<' ';
+   }
 }
 
 signed main() {
