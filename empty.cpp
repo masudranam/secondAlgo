@@ -12,6 +12,7 @@ void solve(){
    for(auto x : a){
       cout << x <<' ';
    }
+   cout << endl;
 }
 
 signed main() {

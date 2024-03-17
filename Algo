@@ -35,6 +35,7 @@ for(int v:adj[u]){
 }
 }
 
+
 int lca(int u,int v){
 if(d[u]<d[v])
     swap(u,v);
